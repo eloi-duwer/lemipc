@@ -6,13 +6,12 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/25 16:08:57 by eduwer            #+#    #+#             */
-/*   Updated: 2020/11/25 20:36:49 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/11/25 21:48:17 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef __LEMIPC_H__
 # define __LEMIPC_H__
-# define LEMIPC_BOARD "/lemipc_shared_infos"
 # include <errno.h>
 # include <fcntl.h>
 # include <libft.h>
@@ -23,6 +22,9 @@
 # include <sys/stat.h>
 # include <sys/types.h>
 # include <unistd.h>
+# include <mqueue.h>
+# define LEMIPC_BOARD "/lemipc_shared_infos"
+# define MQ_HOST "/lemipc_host"
 
 typedef struct	s_ctx {
 	bool		is_host;

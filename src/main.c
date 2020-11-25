@@ -6,7 +6,7 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/25 15:55:13 by eduwer            #+#    #+#             */
-/*   Updated: 2020/11/25 17:08:52 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/11/25 22:05:50 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,8 +24,37 @@ void	perror_and_exit(char *msg)
 	char	*str;
 
 	str = strerror(errno);
+
 	ft_fdprintf(2, "%s: %s\n", msg, str);
 	exit(1);
+}
+
+void	init_message_queue(bool is_host)
+{
+	mqd_t			mq_id;
+	char			msg[8192];
+	struct mq_attr	attr;
+	if (is_host)
+	{
+		ft_memset(&attr, 0, sizeof attr);
+		attr.mq_maxmsg = 64;
+		attr.mq_msgsize = 64;
+		if ((mq_id = mq_open(MQ_HOST, O_RDONLY | O_CREAT, 0644, NULL)) == (mqd_t)-1)
+			perror_and_exit("Error on mq_open with create");
+		if (mq_receive(mq_id, msg, 8192, NULL) == -1)
+			perror_and_exit("Error on mq_receive");
+		ft_printf("Received message: %s\n", msg);
+	}
+	else
+	{
+		if ((mq_id = mq_open(MQ_HOST, O_WRONLY)) == (mqd_t)-1)
+			perror_and_exit("Error on mq_open");
+		if (mq_send(mq_id, "Hi from player 2!\0", 18, 1) == -1)
+			perror_and_exit("Error on mq_send");
+	}
+	mq_close(mq_id);
+	if (is_host)
+		mq_unlink(MQ_HOST);
 }
 
 void	create_mem_if_needed(int fd)
@@ -55,6 +84,14 @@ void	create_mem_if_needed(int fd)
 		ft_memcpy(addr, "coucou\n", 7);
 	else
 		ft_printf("Content of memory: %s\n", addr);
+	init_message_queue(initialize);
+	if (initialize == true)
+	{
+		ft_printf("Closing shm interface\n");
+		munmap(addr, struct_size);
+		close(fd);
+		shm_unlink(LEMIPC_BOARD);
+	}
 }
 
 int		main(int argc, char **argv)
@@ -67,7 +104,5 @@ int		main(int argc, char **argv)
 		perror_and_exit("Error on shm_open");
 	ft_printf("fd = %d\n", fd);
 	create_mem_if_needed(fd);
-	while (1)
-		;
 	return (0);
 }
