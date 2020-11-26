@@ -1,4 +1,8 @@
-SRC_NAME = main.c
+SRC_NAME = main.c \
+	helpers.c \
+	print_helpers.c \
+	shm_offsets.c \
+	board_control.c
 
 NAME = lemipc
 
@@ -21,7 +25,7 @@ $(LFT):
 	make -C ./libft
 
 $(NAME): $(LFT) $(OBJS)
-	$(CC) -o $(NAME) $(OBJS) -Wall -Wextra -L./libft -lft -lrt
+	$(CC) -o $(NAME) $(OBJS) -Wall -Wextra -L./libft -lft -lrt -pthread
 
 $(OBJF)%.o: $(SRCF)%.c
 	@mkdir -p $(@D)

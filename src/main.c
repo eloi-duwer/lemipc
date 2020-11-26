@@ -6,103 +6,99 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/25 15:55:13 by eduwer            #+#    #+#             */
-/*   Updated: 2020/11/25 22:05:50 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/11/26 19:17:19 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <lemipc.h>
 
-size_t	get_struct_size(int size_board, int nb_teams, int nb_players_per_team)
+static void	init_shm_infos(t_ctx *ctx)
 {
-	(void)nb_teams;
-	(void)nb_players_per_team;
-	return (2 + size_board * size_board);
-}
+	int		i;
+	key_t	key;
 
-void	perror_and_exit(char *msg)
-{
-	char	*str;
-
-	str = strerror(errno);
-
-	ft_fdprintf(2, "%s: %s\n", msg, str);
-	exit(1);
-}
-
-void	init_message_queue(bool is_host)
-{
-	mqd_t			mq_id;
-	char			msg[8192];
-	struct mq_attr	attr;
-	if (is_host)
+	acquire_sem(ctx);
+	*ctx->shared_ptr = ctx->board_size;
+	*(ctx->shared_ptr + 1) = ctx->nb_teams;
+	*(ctx->shared_ptr + 2) = ctx->nb_players_per_team;
+	i = 0;
+	while (i < ctx->nb_teams * ctx->nb_players_per_team)
 	{
-		ft_memset(&attr, 0, sizeof attr);
-		attr.mq_maxmsg = 64;
-		attr.mq_msgsize = 64;
-		if ((mq_id = mq_open(MQ_HOST, O_RDONLY | O_CREAT, 0644, NULL)) == (mqd_t)-1)
-			perror_and_exit("Error on mq_open with create");
-		if (mq_receive(mq_id, msg, 8192, NULL) == -1)
-			perror_and_exit("Error on mq_receive");
-		ft_printf("Received message: %s\n", msg);
+		if ((key = msgget(IPC_PRIVATE, 0644)) == -1)
+			error_and_exit(ctx, "Error on msgget", true);
+		ft_memcpy(ctx->shared_ptr + 3 + ctx->nb_teams +\
+			(i * sizeof(key_t)), &key, sizeof(key_t));
+		i++;
 	}
-	else
-	{
-		if ((mq_id = mq_open(MQ_HOST, O_WRONLY)) == (mqd_t)-1)
-			perror_and_exit("Error on mq_open");
-		if (mq_send(mq_id, "Hi from player 2!\0", 18, 1) == -1)
-			perror_and_exit("Error on mq_send");
-	}
-	mq_close(mq_id);
-	if (is_host)
-		mq_unlink(MQ_HOST);
+	ft_memset(get_board_ptr(ctx), 0, ctx->board_size * ctx->board_size);
+	release_sem(ctx);
+	ft_printf("Host: initialized shared memory: board size: %d, %d teams, %d \
+players per team\n", ctx->board_size, ctx->nb_teams, ctx->nb_players_per_team);
 }
 
-void	create_mem_if_needed(int fd)
+void		get_player_id(t_ctx *ctx)
+{
+	acquire_sem(ctx);
+	ctx->player_id = (*(uint8_t *)(ctx->shared_ptr + 3 + ctx->team_id));
+	if (ctx->player_id >= ctx->nb_players_per_team)
+		error_and_exit(ctx, "This team is already full, exiting.", false);
+	++(*(uint8_t *)(ctx->shared_ptr + 3 + ctx->team_id));
+	release_sem(ctx);
+}
+
+void		init_host(t_ctx *ctx, int ac, char **av)
+{
+	ctx->is_host = true;
+	ctx->team_id = 0;
+	get_infos_from_cli(ctx, ac, av);
+	ctx->shared_ptr_size = get_shm_size(ctx);
+	if (ftruncate(ctx->fd, ctx->shared_ptr_size) == -1)
+		perror_and_exit(ctx, "Error on ftruncat", true);
+	if ((ctx->shared_ptr = mmap(NULL, ctx->shared_ptr_size, \
+		PROT_READ | PROT_WRITE, MAP_SHARED, ctx->fd, 0)) == NULL)
+		perror_and_exit(ctx, "Error on mmap", ctx->is_host);
+	init_shm_infos(ctx);
+	get_player_id(ctx);
+}
+
+void		init_client(t_ctx *ctx, size_t size, int ac, char **av)
+{
+	ctx->is_host = false;
+	if (ac != 2)
+		print_usage(ctx, av[0], false);
+	ctx->shared_ptr_size = size;
+	if ((ctx->shared_ptr = mmap(NULL, ctx->shared_ptr_size, \
+		PROT_READ | PROT_WRITE, MAP_SHARED, ctx->fd, 0)) == NULL)
+		perror_and_exit(ctx, "Error on mmap", ctx->is_host);
+	get_infos_from_shm(ctx);
+	ctx->team_id = (uint8_t)ft_atoi(av[1]) - 1;
+	if (ctx->team_id >= ctx->nb_teams)
+		error_and_exit(ctx, "Team number is too high", false);
+	get_player_id(ctx);
+}
+
+int			main(int argc, char **argv)
 {
 	struct stat	stats;
-	void		*addr;
-	size_t		struct_size;
-	bool		initialize;
+	t_ctx		context;
 
-	struct_size = get_struct_size(5, 1, 1);
-	if (fstat(fd, &stats) == -1)
-		perror_and_exit("Error on fstat");
-	ft_printf("fstat size: %d\n", (int)stats.st_size);
+	ft_bzero(&context, sizeof(context));
+	if ((context.fd = shm_open(LEMIPC, O_RDWR | O_CREAT, 0644)) < 0)
+		perror_and_exit(&context, "Error on shm_open", true);
+	if (fstat(context.fd, &stats) == -1)
+		perror_and_exit(&context, "Error on fstat", true);
+	if ((context.sem = sem_open(LEMIPC, O_RDWR | O_CREAT, 0644, 1))\
+		== SEM_FAILED)
+		perror_and_exit(&context, "Error on sem_open", true);
 	if (stats.st_size == 0)
-	{
-		initialize = true;
-		if (ftruncate(fd, struct_size) == -1)
-			perror_and_exit("Error on ftruncat");
-	}
+		init_host(&context, argc, argv);
 	else
-		initialize = false;
-	if ((addr = mmap(NULL, struct_size, \
-		PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) == NULL)
-		perror_and_exit("Error on mmap");
-	ft_printf("mmaped successfully, address is %p\n", addr);
-	if (initialize == true)
-		ft_memcpy(addr, "coucou\n", 7);
-	else
-		ft_printf("Content of memory: %s\n", addr);
-	init_message_queue(initialize);
-	if (initialize == true)
-	{
-		ft_printf("Closing shm interface\n");
-		munmap(addr, struct_size);
-		close(fd);
-		shm_unlink(LEMIPC_BOARD);
-	}
-}
-
-int		main(int argc, char **argv)
-{
-	int fd;
-
-	(void)argc;
-	(void)argv;
-	if ((fd = shm_open(LEMIPC_BOARD, O_RDWR | O_CREAT, 0644)) < 0)
-		perror_and_exit("Error on shm_open");
-	ft_printf("fd = %d\n", fd);
-	create_mem_if_needed(fd);
+		init_client(&context, stats.st_size, argc, argv);
+	ft_printf("Process initiated, waiting for messages\n");
+	ft_printf("Team: %d, Player: %d\n", context.team_id + 1, \
+		context.player_id + 1);
+	while (1)
+		;
+	free_ressources(&context, context.is_host);
 	return (0);
 }
