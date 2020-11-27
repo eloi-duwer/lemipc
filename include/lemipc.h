@@ -6,7 +6,7 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/25 16:08:57 by eduwer            #+#    #+#             */
-/*   Updated: 2020/11/26 19:22:28 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/11/27 19:03:02 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 # include <errno.h>
 # include <fcntl.h>
 # include <libft.h>
+# include <semaphore.h>
 # include <stdbool.h>
 # include <stdlib.h>
 # include <string.h>
@@ -23,15 +24,21 @@
 # include <sys/msg.h>
 # include <sys/stat.h>
 # include <sys/types.h>
+# include <time.h>
 # include <unistd.h>
-# include <semaphore.h>
 # define LEMIPC "/lemipc"
 # define DEFAULT_PLAYERS_PER_TEAM
+
+typedef struct	s_message {
+	long 		etype;
+	uint8_t		content[3];
+}				t_message;
 
 typedef struct	s_ctx {
 	bool		is_host;
 	bool		has_semaphore;
 	int			fd;
+	int			own_msgq;
 	sem_t		*sem;
 	uint8_t		board_size;
 	uint8_t		nb_teams;
@@ -40,17 +47,18 @@ typedef struct	s_ctx {
 	uint8_t		player_id;
 	uint8_t		pos_x;
 	uint8_t		pos_y;
+	uint8_t		target_x;
+	uint8_t		target_y;
 	uint8_t		*board;
 	size_t		shared_ptr_size;
 	uint8_t		*shared_ptr;
 }				t_ctx;
 
 enum	e_msg_type	{
-	ping,
-	attack,
-	play,
-	host_promotion,
-	game_ended
+	e_attack,
+	e_play,
+	e_host_promotion,
+	e_game_ended
 };
 
 /*
@@ -64,6 +72,7 @@ void			perror_and_exit(t_ctx *ctx, char *msg, \
 	bool free_shared_ressources);
 void			print_usage(t_ctx *ctx, char *prog, \
 	bool free_shared_ressources);
+void			print_board(t_ctx *ctx);
 
 /*
 ** helpers.c
@@ -83,7 +92,8 @@ void			release_sem(t_ctx *ctx);
 
 size_t			get_shm_size(t_ctx *ctx);
 uint8_t			*get_board_ptr(t_ctx *ctx);
-key_t			*get_msg_queues(t_ctx *ctx);
+int				*get_msg_queues(t_ctx *ctx);
+int				get_queue(t_ctx *ctx, uint8_t team_id, uint8_t player_id);
 
 /*
 ** board_control.c
@@ -94,5 +104,13 @@ key_t			*get_msg_queues(t_ctx *ctx);
 void			move_to_pos(t_ctx *ctx, uint8_t pos_x, uint8_t pos_y);
 uint8_t			get_cell_content(t_ctx *ctx, uint8_t x, uint8_t y);
 bool			is_surrounded(t_ctx *ctx);
+void			set_start_position(t_ctx *ctx);
+
+/*
+** msq_listening.c
+** Functions about handling message queues
+*/
+
+void			start_listening(t_ctx *ctx);
 
 #endif

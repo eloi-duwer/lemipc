@@ -6,7 +6,7 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/25 15:55:13 by eduwer            #+#    #+#             */
-/*   Updated: 2020/11/26 19:17:19 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/11/27 19:39:10 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 static void	init_shm_infos(t_ctx *ctx)
 {
 	int		i;
-	key_t	key;
+	int		key;
 
 	acquire_sem(ctx);
 	*ctx->shared_ptr = ctx->board_size;
@@ -26,11 +26,13 @@ static void	init_shm_infos(t_ctx *ctx)
 	{
 		if ((key = msgget(IPC_PRIVATE, 0644)) == -1)
 			error_and_exit(ctx, "Error on msgget", true);
+		ft_printf("Created msgq: %d\n", key);
 		ft_memcpy(ctx->shared_ptr + 3 + ctx->nb_teams +\
-			(i * sizeof(key_t)), &key, sizeof(key_t));
+			(i * sizeof(int)), &key, sizeof(int));
 		i++;
 	}
-	ft_memset(get_board_ptr(ctx), 0, ctx->board_size * ctx->board_size);
+	ctx->board = get_board_ptr(ctx);
+	ft_memset(ctx->board, 0, ctx->board_size * ctx->board_size);
 	release_sem(ctx);
 	ft_printf("Host: initialized shared memory: board size: %d, %d teams, %d \
 players per team\n", ctx->board_size, ctx->nb_teams, ctx->nb_players_per_team);
@@ -38,12 +40,11 @@ players per team\n", ctx->board_size, ctx->nb_teams, ctx->nb_players_per_team);
 
 void		get_player_id(t_ctx *ctx)
 {
-	acquire_sem(ctx);
-	ctx->player_id = (*(uint8_t *)(ctx->shared_ptr + 3 + ctx->team_id));
+	ctx->player_id = *(uint8_t *)(ctx->shared_ptr + 3 + ctx->team_id);
 	if (ctx->player_id >= ctx->nb_players_per_team)
 		error_and_exit(ctx, "This team is already full, exiting.", false);
 	++(*(uint8_t *)(ctx->shared_ptr + 3 + ctx->team_id));
-	release_sem(ctx);
+	ctx->own_msgq = get_queue(ctx, ctx->team_id, ctx->player_id);
 }
 
 void		init_host(t_ctx *ctx, int ac, char **av)
@@ -58,7 +59,10 @@ void		init_host(t_ctx *ctx, int ac, char **av)
 		PROT_READ | PROT_WRITE, MAP_SHARED, ctx->fd, 0)) == NULL)
 		perror_and_exit(ctx, "Error on mmap", ctx->is_host);
 	init_shm_infos(ctx);
+	acquire_sem(ctx);
 	get_player_id(ctx);
+	set_start_position(ctx);
+	release_sem(ctx);
 }
 
 void		init_client(t_ctx *ctx, size_t size, int ac, char **av)
@@ -74,7 +78,10 @@ void		init_client(t_ctx *ctx, size_t size, int ac, char **av)
 	ctx->team_id = (uint8_t)ft_atoi(av[1]) - 1;
 	if (ctx->team_id >= ctx->nb_teams)
 		error_and_exit(ctx, "Team number is too high", false);
+	acquire_sem(ctx);
 	get_player_id(ctx);
+	set_start_position(ctx);
+	release_sem(ctx);
 }
 
 int			main(int argc, char **argv)
@@ -94,11 +101,8 @@ int			main(int argc, char **argv)
 		init_host(&context, argc, argv);
 	else
 		init_client(&context, stats.st_size, argc, argv);
-	ft_printf("Process initiated, waiting for messages\n");
-	ft_printf("Team: %d, Player: %d\n", context.team_id + 1, \
-		context.player_id + 1);
-	while (1)
-		;
-	free_ressources(&context, context.is_host);
+	ft_printf("Process initiated, waiting for messages\n\
+Team: %d, Player: %d\n", context.team_id + 1, context.player_id + 1);
+	start_listening(&context);
 	return (0);
 }

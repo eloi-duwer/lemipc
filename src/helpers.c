@@ -6,7 +6,7 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/26 10:09:08 by eduwer            #+#    #+#             */
-/*   Updated: 2020/11/26 19:25:50 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/11/27 19:40:38 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -82,16 +82,21 @@ void	get_infos_from_shm(t_ctx *ctx)
 		ctx->nb_teams * ctx->nb_players_per_team)
 		error_and_exit(ctx, \
 			"The board is too small for the number of players", false);
+	ctx->board = get_board_ptr(ctx);
 }
 
 void	acquire_sem(t_ctx *ctx)
 {
+	if (ctx->has_semaphore == true)
+		return ;
 	sem_wait(ctx->sem);
 	ctx->has_semaphore = true;
 }
 
 void	release_sem(t_ctx *ctx)
 {
+	if (ctx->has_semaphore == false)
+		return ;
 	sem_post(ctx->sem);
 	ctx->has_semaphore = false;
 }

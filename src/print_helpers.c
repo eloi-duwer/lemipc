@@ -6,30 +6,27 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/25 23:36:38 by eduwer            #+#    #+#             */
-/*   Updated: 2020/11/26 18:19:13 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/11/27 19:02:29 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <lemipc.h>
 
-void	perror_and_exit(t_ctx *ctx, char *msg, bool free_shared_ressources)
+void		perror_and_exit(t_ctx *ctx, char *msg, bool free_shared_ressources)
 {
-	char	*str;
-
-	str = strerror(errno);
-	ft_fdprintf(2, "%s: %s\n", msg, str);
+	ft_fdprintf(2, "%s: %s\n", msg, strerror(errno));
 	free_ressources(ctx, free_shared_ressources);
 	exit(1);
 }
 
-void	error_and_exit(t_ctx *ctx, char *msg, bool free_shared_ressources)
+void		error_and_exit(t_ctx *ctx, char *msg, bool free_shared_ressources)
 {
 	ft_fdprintf(2, "%s\n", msg);
 	free_ressources(ctx, free_shared_ressources);
 	exit(1);
 }
 
-void	print_usage(t_ctx *ctx, char *prog, bool free_shared_ressources)
+void		print_usage(t_ctx *ctx, char *prog, bool free_shared_ressources)
 {
 	ft_printf("Usage for the first instance: \n\
 %s <board_size> <nb_teams> <nb_players_per_team>\n\
@@ -44,4 +41,38 @@ Where team_nb is the number of the team that instance must be in\n", \
 		prog, prog);
 	free_ressources(ctx, free_shared_ressources);
 	exit(1);
+}
+
+static void	print_horizontal_line(uint8_t board_size)
+{
+	int i;
+
+	i = 0;
+	ft_printf("+");
+	while (i < board_size * 2 - 1)
+	{
+		ft_printf("-");
+		i++;
+	}
+	ft_printf("+\n");
+}
+
+void		print_board(t_ctx *ctx)
+{
+	int	i;
+
+	i = 0;
+	print_horizontal_line(ctx->board_size);
+	while (i < ctx->board_size * ctx->board_size)
+	{
+		ft_printf("|");
+		if (ctx->board[i] == 0)
+			ft_printf(" ");
+		else
+			ft_printf("%d", (int)ctx->board[i]);
+		if (i % ctx->board_size == ctx->board_size - 1)
+			ft_printf("|\n");
+		i++;
+	}
+	print_horizontal_line(ctx->board_size);
 }
