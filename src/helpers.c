@@ -6,7 +6,7 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/26 10:09:08 by eduwer            #+#    #+#             */
-/*   Updated: 2020/11/27 19:40:38 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/12/06 01:48:35 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,19 +47,19 @@ void	get_infos_from_cli(t_ctx *ctx, int ac, char **av)
 	if (ac != 4)
 		print_usage(ctx, av[0], true);
 	nb = ft_atoi(av[1]);
-	if (nb <= 1 || nb > 255)
+	if (nb <= 1 || nb > 200)
 		error_and_exit(ctx, "The board size must \
-be an integer between 2 and 255", true);
+be an integer between 2 and 200", true);
 	ctx->board_size = (uint8_t)nb;
 	nb = ft_atoi(av[2]);
-	if (nb <= 1 || nb > 255)
+	if (nb <= 1 || nb > 200)
 		error_and_exit(ctx, "The number of teams must \
-be an integer between 2 and 255", true);
+be an integer between 2 and 200", true);
 	ctx->nb_teams = (uint8_t)nb;
 	nb = ft_atoi(av[3]);
-	if (nb <= 1 || nb > 255)
-		error_and_exit(ctx, "The number of teams must \
-be an integer between 2 and 255", true);
+	if (nb <= 1 || nb > 200)
+		error_and_exit(ctx, "The number of player per team must \
+be an integer between 2 and 200", true);
 	ctx->nb_players_per_team = (uint8_t)nb;
 	if (ctx->board_size * ctx->board_size < \
 		ctx->nb_teams * ctx->nb_players_per_team)

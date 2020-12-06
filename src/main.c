@@ -6,7 +6,7 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/25 15:55:13 by eduwer            #+#    #+#             */
-/*   Updated: 2020/11/27 19:39:10 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/12/06 03:11:30 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,14 +21,15 @@ static void	init_shm_infos(t_ctx *ctx)
 	*ctx->shared_ptr = ctx->board_size;
 	*(ctx->shared_ptr + 1) = ctx->nb_teams;
 	*(ctx->shared_ptr + 2) = ctx->nb_players_per_team;
+	ft_memset(ctx->shared_ptr + 3, 1, ctx->nb_teams);
 	i = 0;
 	while (i < ctx->nb_teams * ctx->nb_players_per_team)
 	{
 		if ((key = msgget(IPC_PRIVATE, 0644)) == -1)
 			error_and_exit(ctx, "Error on msgget", true);
-		ft_printf("Created msgq: %d\n", key);
 		ft_memcpy(ctx->shared_ptr + 3 + ctx->nb_teams +\
 			(i * sizeof(int)), &key, sizeof(int));
+		ft_printf("Created key %d\n", key);
 		i++;
 	}
 	ctx->board = get_board_ptr(ctx);
@@ -40,21 +41,21 @@ players per team\n", ctx->board_size, ctx->nb_teams, ctx->nb_players_per_team);
 
 void		get_player_id(t_ctx *ctx)
 {
-	ctx->player_id = *(uint8_t *)(ctx->shared_ptr + 3 + ctx->team_id);
-	if (ctx->player_id >= ctx->nb_players_per_team)
+	ctx->player_id = *(uint8_t *)(ctx->shared_ptr + 3 + ctx->team_id - 1);
+	if (ctx->player_id > ctx->nb_players_per_team)
 		error_and_exit(ctx, "This team is already full, exiting.", false);
-	++(*(uint8_t *)(ctx->shared_ptr + 3 + ctx->team_id));
+	++(*(uint8_t *)(ctx->shared_ptr + 3 + ctx->team_id - 1));
 	ctx->own_msgq = get_queue(ctx, ctx->team_id, ctx->player_id);
 }
 
 void		init_host(t_ctx *ctx, int ac, char **av)
 {
 	ctx->is_host = true;
-	ctx->team_id = 0;
+	ctx->team_id = 1;
 	get_infos_from_cli(ctx, ac, av);
 	ctx->shared_ptr_size = get_shm_size(ctx);
 	if (ftruncate(ctx->fd, ctx->shared_ptr_size) == -1)
-		perror_and_exit(ctx, "Error on ftruncat", true);
+		perror_and_exit(ctx, "Error on ftruncate", true);
 	if ((ctx->shared_ptr = mmap(NULL, ctx->shared_ptr_size, \
 		PROT_READ | PROT_WRITE, MAP_SHARED, ctx->fd, 0)) == NULL)
 		perror_and_exit(ctx, "Error on mmap", ctx->is_host);
@@ -75,9 +76,9 @@ void		init_client(t_ctx *ctx, size_t size, int ac, char **av)
 		PROT_READ | PROT_WRITE, MAP_SHARED, ctx->fd, 0)) == NULL)
 		perror_and_exit(ctx, "Error on mmap", ctx->is_host);
 	get_infos_from_shm(ctx);
-	ctx->team_id = (uint8_t)ft_atoi(av[1]) - 1;
-	if (ctx->team_id >= ctx->nb_teams)
-		error_and_exit(ctx, "Team number is too high", false);
+	ctx->team_id = (uint8_t)ft_atoi(av[1]);
+	if (ctx->team_id > ctx->nb_teams || ctx->team_id == 0)
+		error_and_exit(ctx, "Team number is too low or too high", false);
 	acquire_sem(ctx);
 	get_player_id(ctx);
 	set_start_position(ctx);
@@ -102,7 +103,8 @@ int			main(int argc, char **argv)
 	else
 		init_client(&context, stats.st_size, argc, argv);
 	ft_printf("Process initiated, waiting for messages\n\
-Team: %d, Player: %d\n", context.team_id + 1, context.player_id + 1);
+Team: %d, Player: %d\n", context.team_id, context.player_id);
+	print_board(&context);
 	start_listening(&context);
 	return (0);
 }

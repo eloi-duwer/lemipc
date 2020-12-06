@@ -6,7 +6,7 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/27 15:27:12 by eduwer            #+#    #+#             */
-/*   Updated: 2020/11/27 19:39:02 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/12/06 03:13:18 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,15 +15,15 @@
 static int	get_next_player_msgq(t_ctx *ctx, \
 	uint8_t *team_id, uint8_t *player_id)
 {
-	if (*player_id >= ctx->nb_players_per_team - 1 \
-		&& *team_id >= ctx->nb_teams - 1)
+	if (*player_id >= ctx->nb_players_per_team \
+		&& *team_id >= ctx->nb_teams)
 	{
-		*player_id = 0;
-		*team_id = 0;
+		*player_id = 1;
+		*team_id = 1;
 	}
-	else if (*team_id >= ctx->nb_teams - 1)
+	else if (*team_id >= ctx->nb_teams)
 	{
-		*team_id = 0;
+		*team_id = 1;
 		(*player_id)++;
 	}
 	else
@@ -31,7 +31,8 @@ static int	get_next_player_msgq(t_ctx *ctx, \
 	return (get_queue(ctx, *team_id, *player_id));
 }
 
-static void	msg_next_player(t_ctx *ctx)
+void		send_msg_to_next_player(t_ctx *ctx, uint8_t *content, \
+	ssize_t content_size)
 {
 	uint8_t		ids[2];
 	int			msgid;
@@ -44,12 +45,12 @@ static void	msg_next_player(t_ctx *ctx)
 		msgid = get_next_player_msgq(ctx, &ids[0], &ids[1]);
 		if (msgid == ctx->own_msgq)
 			error_and_exit(ctx, \
-				"All other players seems to have exited, quitting", true);
+				"All other players seems to have exited, exiting", true);
 		if (msgid != -1)
 		{
 			msg.etype = 1;
-			msg.content[0] = (uint8_t)e_play;
-			msgsnd(msgid, &msg, 1, 0);
+			ft_memcpy(msg.content, content, content_size);
+			msgsnd(msgid, &msg, content_size, 0);
 			return ;
 		}
 	}
@@ -63,7 +64,8 @@ static void	check_start_game(t_ctx *ctx)
 	acquire_sem(ctx);
 	while (i < ctx->nb_teams)
 	{
-		if (*(uint8_t *)(ctx->shared_ptr + 3 + i) != ctx->nb_players_per_team)
+		if (*(uint8_t *)(ctx->shared_ptr + 3 + i) != \
+			ctx->nb_players_per_team + 1)
 		{
 			release_sem(ctx);
 			return ;
@@ -71,17 +73,28 @@ static void	check_start_game(t_ctx *ctx)
 		i++;
 	}
 	ft_printf("All players have joined, sending msg to start the game\n");
-	print_board(ctx);
-	msg_next_player(ctx);
+	i = (uint8_t)e_play;
+	send_msg_to_next_player(ctx, &i, 1);
 	release_sem(ctx);
 }
 
 void		play_turn(t_ctx *ctx)
 {
-	ft_printf("Hey my turn to play!\n");
+	uint8_t content;
+
+	ft_printf("Hey my turn to play!\nBoard state:\n");
 	sleep(1);
 	acquire_sem(ctx);
-	msg_next_player(ctx);
+	print_board(ctx);
+	check_game_over(ctx);
+	content = get_cell_content(ctx, ctx->target_x, ctx->target_y);
+	if (content == 0 || content == ctx->team_id)
+		find_and_send_new_target(ctx);
+	move_towards_target(ctx);
+	content = (uint8_t)e_play;
+	ft_printf("Board state after playing:\n");
+	print_board(ctx);
+	send_msg_to_next_player(ctx, &content, 1);
 	release_sem(ctx);
 }
 
@@ -98,15 +111,16 @@ void		start_listening(t_ctx *ctx)
 		{
 			ctx->target_x = msg.content[1];
 			ctx->target_y = msg.content[2];
+			ft_printf("Recieved msg to attack cell %d %d\n", \
+				ctx->target_x, ctx->target_y);
 		}
 		else if ((enum e_msg_type)msg.content[0] == e_play)
-		{
 			play_turn(ctx);
-		}
 		else if ((enum e_msg_type)msg.content[0] == e_host_promotion)
 			ctx->is_host = true;
 		else if ((enum e_msg_type)msg.content[0] == e_game_ended)
 		{
+			ft_printf("Game ended, exiting...\n");
 			free_ressources(ctx, false);
 			exit(0);
 		}

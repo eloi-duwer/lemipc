@@ -6,7 +6,7 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/25 16:08:57 by eduwer            #+#    #+#             */
-/*   Updated: 2020/11/27 19:03:02 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/12/06 01:36:46 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@
 # define DEFAULT_PLAYERS_PER_TEAM
 
 typedef struct	s_message {
-	long 		etype;
+	long		etype;
 	uint8_t		content[3];
 }				t_message;
 
@@ -53,6 +53,15 @@ typedef struct	s_ctx {
 	size_t		shared_ptr_size;
 	uint8_t		*shared_ptr;
 }				t_ctx;
+
+typedef struct	s_move {
+	int			min_dist;
+	int			i;
+	int			try_x;
+	int			try_y;
+	int			next_x;
+	int			next_y;
+}				t_move;
 
 enum	e_msg_type	{
 	e_attack,
@@ -94,6 +103,7 @@ size_t			get_shm_size(t_ctx *ctx);
 uint8_t			*get_board_ptr(t_ctx *ctx);
 int				*get_msg_queues(t_ctx *ctx);
 int				get_queue(t_ctx *ctx, uint8_t team_id, uint8_t player_id);
+void			rm_own_queue(t_ctx *ctx);
 
 /*
 ** board_control.c
@@ -101,7 +111,7 @@ int				get_queue(t_ctx *ctx, uint8_t team_id, uint8_t player_id);
 ** getting content of a cell...
 */
 
-void			move_to_pos(t_ctx *ctx, uint8_t pos_x, uint8_t pos_y);
+bool			move_to_pos(t_ctx *ctx, uint8_t pos_x, uint8_t pos_y);
 uint8_t			get_cell_content(t_ctx *ctx, uint8_t x, uint8_t y);
 bool			is_surrounded(t_ctx *ctx);
 void			set_start_position(t_ctx *ctx);
@@ -112,5 +122,25 @@ void			set_start_position(t_ctx *ctx);
 */
 
 void			start_listening(t_ctx *ctx);
+void			send_msg_to_next_player(t_ctx *ctx, uint8_t *content, \
+	ssize_t content_size);
+
+/*
+** play_helpers.c
+** Functions to check if the player is surrounded by at least two other players
+** If it is the case, the player removes itself and exits
+** + Functions to set new target and move towards target
+*/
+
+void			check_game_over(t_ctx *ctx);
+void			find_and_send_new_target(t_ctx *ctx);
+void			move_towards_target(t_ctx *ctx);
+
+/*
+**	send_game_ended_msg.c
+**	When the game is ended, we have to send a msg to all the players to quit
+*/
+
+void			send_game_ended_and_exit(t_ctx *ctx);
 
 #endif

@@ -3,7 +3,9 @@ SRC_NAME = main.c \
 	print_helpers.c \
 	shm_offsets.c \
 	board_control.c \
-	msq_listening.c
+	msq_listening.c \
+	play_helpers.c \
+	send_game_ended_msg.c
 
 NAME = lemipc
 

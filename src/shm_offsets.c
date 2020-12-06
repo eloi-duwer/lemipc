@@ -6,7 +6,7 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/25 23:45:43 by eduwer            #+#    #+#             */
-/*   Updated: 2020/11/27 19:01:37 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/12/06 03:14:02 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,5 +45,16 @@ int		get_queue(t_ctx *ctx, uint8_t team_id, uint8_t player_id)
 	int	*queue_ptr;
 
 	queue_ptr = (int *)(ctx->shared_ptr + 3 + ctx->nb_teams);
-	return (queue_ptr[team_id + player_id * ctx->nb_players_per_team]);
+	return (queue_ptr[((team_id - 1) * ctx->nb_players_per_team) + \
+		(player_id - 1)]);
+}
+
+void	rm_own_queue(t_ctx *ctx)
+{
+	int	*queue_ptr;
+
+	queue_ptr = (int *)(ctx->shared_ptr + 3 + ctx->nb_teams);
+	msgctl(ctx->own_msgq, IPC_RMID, NULL);
+	queue_ptr[(ctx->team_id - 1) * ctx->nb_players_per_team + \
+		(ctx->player_id - 1)] = -1;
 }
