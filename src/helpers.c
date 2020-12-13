@@ -6,7 +6,7 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/26 10:09:08 by eduwer            #+#    #+#             */
-/*   Updated: 2020/12/06 01:48:35 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/12/13 19:18:49 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,6 +84,11 @@ void	get_infos_from_shm(t_ctx *ctx)
 			"The board is too small for the number of players", false);
 	ctx->board = get_board_ptr(ctx);
 }
+
+/*
+** Functions to handle the semaphore, and preventing any 
+** multiple lock / release of the semaphore
+*/
 
 void	acquire_sem(t_ctx *ctx)
 {

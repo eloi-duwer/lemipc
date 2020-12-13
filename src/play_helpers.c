@@ -6,7 +6,7 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/04 18:38:25 by eduwer            #+#    #+#             */
-/*   Updated: 2020/12/06 03:13:39 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/12/13 18:22:30 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,10 +69,10 @@ void		find_and_send_new_target(t_ctx *ctx)
 	while (dist < (int)ctx->board_size)
 	{
 		delta[0] = -dist;
-		while (delta[0] != dist)
+		while (delta[0] <= dist)
 		{
 			delta[1] = -dist;
-			while (delta[1] != dist)
+			while (delta[1] <= dist)
 			{
 				if (check_target_and_send(ctx, ctx->pos_x + delta[0], \
 					ctx->pos_y + delta[1]) == true)
@@ -99,7 +99,7 @@ void		move_towards_target(t_ctx *ctx)
 		return ;
 	m.i = 0;
 	m.min_dist = INT_MAX;
-	while (m.i < 8)
+	while (m.i <= 8)
 	{
 		m.try_x = ctx->pos_x + (m.i / 3) - 1;
 		m.try_y = ctx->pos_y + (m.i % 3) - 1;

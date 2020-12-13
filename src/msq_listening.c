@@ -6,7 +6,7 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/27 15:27:12 by eduwer            #+#    #+#             */
-/*   Updated: 2020/12/06 03:13:18 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/12/13 19:06:22 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,7 +72,8 @@ static void	check_start_game(t_ctx *ctx)
 		}
 		i++;
 	}
-	ft_printf("All players have joined, sending msg to start the game\n");
+	ft_printf("[Team %d Player %d] All players have joined, sending \
+msg to start the game\n", ctx->team_id, ctx->player_id);
 	i = (uint8_t)e_play;
 	send_msg_to_next_player(ctx, &i, 1);
 	release_sem(ctx);
@@ -82,9 +83,9 @@ void		play_turn(t_ctx *ctx)
 {
 	uint8_t content;
 
-	ft_printf("Hey my turn to play!\nBoard state:\n");
-	sleep(1);
 	acquire_sem(ctx);
+	ft_printf("[Team %d Player %d] Hey my turn to play!\nBoard state:\n", \
+		ctx->team_id, ctx->player_id);
 	print_board(ctx);
 	check_game_over(ctx);
 	content = get_cell_content(ctx, ctx->target_x, ctx->target_y);
@@ -92,8 +93,6 @@ void		play_turn(t_ctx *ctx)
 		find_and_send_new_target(ctx);
 	move_towards_target(ctx);
 	content = (uint8_t)e_play;
-	ft_printf("Board state after playing:\n");
-	print_board(ctx);
 	send_msg_to_next_player(ctx, &content, 1);
 	release_sem(ctx);
 }
@@ -111,8 +110,8 @@ void		start_listening(t_ctx *ctx)
 		{
 			ctx->target_x = msg.content[1];
 			ctx->target_y = msg.content[2];
-			ft_printf("Recieved msg to attack cell %d %d\n", \
-				ctx->target_x, ctx->target_y);
+			ft_printf("[Team %d Player %d] Recieved msg to attack cell %d \
+%d\n", ctx->team_id, ctx->player_id, ctx->target_x, ctx->target_y);
 		}
 		else if ((enum e_msg_type)msg.content[0] == e_play)
 			play_turn(ctx);

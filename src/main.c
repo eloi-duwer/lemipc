@@ -6,11 +6,21 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/25 15:55:13 by eduwer            #+#    #+#             */
-/*   Updated: 2020/12/06 03:11:30 by eduwer           ###   ########.fr       */
+/*   Updated: 2020/12/13 19:16:51 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <lemipc.h>
+
+/*
+** This file contains all the initialization code
+** I prefer to use POSIX shm utilities,
+** But MAC OS doesn't support POSIX message queues,
+** So I will be using System V msgq.
+** None of the functions relase the semaphore,
+** It is released after all the initialization is completed
+** (after start_listening on msgq_listening.c)
+*/
 
 static void	init_shm_infos(t_ctx *ctx)
 {
@@ -34,7 +44,6 @@ static void	init_shm_infos(t_ctx *ctx)
 	}
 	ctx->board = get_board_ptr(ctx);
 	ft_memset(ctx->board, 0, ctx->board_size * ctx->board_size);
-	release_sem(ctx);
 	ft_printf("Host: initialized shared memory: board size: %d, %d teams, %d \
 players per team\n", ctx->board_size, ctx->nb_teams, ctx->nb_players_per_team);
 }
@@ -63,7 +72,6 @@ void		init_host(t_ctx *ctx, int ac, char **av)
 	acquire_sem(ctx);
 	get_player_id(ctx);
 	set_start_position(ctx);
-	release_sem(ctx);
 }
 
 void		init_client(t_ctx *ctx, size_t size, int ac, char **av)
@@ -82,7 +90,6 @@ void		init_client(t_ctx *ctx, size_t size, int ac, char **av)
 	acquire_sem(ctx);
 	get_player_id(ctx);
 	set_start_position(ctx);
-	release_sem(ctx);
 }
 
 int			main(int argc, char **argv)

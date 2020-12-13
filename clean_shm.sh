@@ -1,3 +1,3 @@
-#/bin/sh
-rm /dev/shm/*lemipc
+#!/bin/sh
+rm -rf /dev/shm/*lemipc
 ipcrm -a
