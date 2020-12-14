@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if [ "$#" -ne 3 ]; then
-	echo "Usage: sh coucou <board_size> <nb_teams> <nb_players_per_team>"
+	echo "Usage: $0 <board_size> <nb_teams> <nb_players_per_team>"
 	exit 1
 fi
 
