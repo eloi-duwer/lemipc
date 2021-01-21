@@ -6,7 +6,7 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/26 18:51:17 by eduwer            #+#    #+#             */
-/*   Updated: 2020/12/13 18:52:09 by eduwer           ###   ########.fr       */
+/*   Updated: 2021/01/21 21:07:16 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,8 +74,10 @@ void	set_start_position(t_ctx *ctx)
 	srand(time(NULL));
 	while (true)
 	{
-		x = (uint8_t)((double)rand() / (double)RAND_MAX * (double)ctx->board_size);
-		y = (uint8_t)((double)rand() / (double)RAND_MAX * (double)ctx->board_size);
+		x = (uint8_t)((double)rand() / (double)RAND_MAX * \
+			(double)ctx->board_size);
+		y = (uint8_t)((double)rand() / (double)RAND_MAX * \
+			(double)ctx->board_size);
 		if (get_cell_content(ctx, x, y) == 0)
 		{
 			ctx->pos_x = x;

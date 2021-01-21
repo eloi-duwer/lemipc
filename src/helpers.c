@@ -6,7 +6,7 @@
 /*   By: eduwer <eduwer@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/11/26 10:09:08 by eduwer            #+#    #+#             */
-/*   Updated: 2020/12/13 19:18:49 by eduwer           ###   ########.fr       */
+/*   Updated: 2021/01/21 21:07:25 by eduwer           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,7 +86,7 @@ void	get_infos_from_shm(t_ctx *ctx)
 }
 
 /*
-** Functions to handle the semaphore, and preventing any 
+** Functions to handle the semaphore, and preventing any
 ** multiple lock / release of the semaphore
 */
 
